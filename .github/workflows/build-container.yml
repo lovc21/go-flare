@@ -56,11 +56,11 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes mylocaltest:latest 
+        cosign sign --yes docker://mylocaltest:latest
 
     - name: Verify image signatures
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign verify mylocaltest:latest 
+        cosign verify docker://mylocaltest:latest
