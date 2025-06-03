@@ -42,10 +42,11 @@ jobs:
     - name: Build image
       run: |        
         docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          --tag localtest:latest \
+          --platform linux/amd64 \
+          --tag mylocaltest:latest \
           --file ./Dockerfile \
-          --output type=image
+          --output type=image \
+          . 
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
