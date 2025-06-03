@@ -39,13 +39,16 @@ jobs:
     #     username: ${{ secrets.DOCKER_HUB_UID }}
     #     password: ${{ secrets.DOCKER_HUB_PAT }}
 
+    - name: Set image tag
+      run: echo "IMAGE_TAG=ghcr.io/${{ github.repository }}:dev" >> $GITHUB_ENV
+
     - name: Build image
-      run: |        
+      run: |
         docker buildx build \
           --platform linux/amd64 \
-          --tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }} \
+          --tag ${{ env.IMAGE_TAG }} \
           --file ./Dockerfile \
-          --output type=image,push=true . 
+          --output type=image,push=true .
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
@@ -55,11 +58,11 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+          cosign sign --yes ghcr.io/${{ github.repository }}:dev
 
     - name: Verify image signatures
       shell: bash
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign verify ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}
+          cosign verify ghcr.io/${{ github.repository }}:dev
