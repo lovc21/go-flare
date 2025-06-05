@@ -57,7 +57,7 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-          cosign sign --yes --registry-referrers-mode=oci-1-1 ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
+          cosign sign --yes --upload=false ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 
     - name: Verify image signatures
       shell: bash
