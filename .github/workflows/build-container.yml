@@ -41,6 +41,21 @@ jobs:
     #     username: ${{ secrets.DOCKER_HUB_UID }}
     #     password: ${{ secrets.DOCKER_HUB_PAT }}
 
+    - name: Build distroless image
+      run: |
+        TAGS="--tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
+    
+        if [ "${USE_DOCKER_HUB}" = "true" ]; then
+          TAGS="$TAGS --tag ${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
+        fi
+
+        docker buildx build \
+          --platform linux/amd64,linux/arm64 \
+          $TAGS \
+          --file ./Dockerfile.dless \
+          --output type=image,push=true \
+          .
+
     - name: Build standard image
       run: |
         TAGS="--tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}"
@@ -56,20 +71,7 @@ jobs:
           --output type=image,push=true \
           .
 
-    - name: Build distroless image
-      run: |
-        TAGS="--tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
-    
-        if [ "${USE_DOCKER_HUB}" = "true" ]; then
-          TAGS="$TAGS --tag ${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
-        fi
 
-        docker buildx build \
-          --platform linux/amd64,linux/arm64 \
-          $TAGS \
-          --file ./Dockerfile.dless \
-          --output type=image,push=true \
-          .
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
