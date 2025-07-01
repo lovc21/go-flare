@@ -22,6 +22,14 @@ jobs:
     - uses: docker/setup-qemu-action@v3
     - uses: docker/setup-buildx-action@v3
 
+    - uses: actions/cache@v3
+      id: buildx-cache
+      with:
+        path: /tmp/.buildx-cache
+        # include Dockerfile(s) in the key so cache
+        # invalidates when you change them
+        key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*') }}
+
     - run: echo "IMAGE_TAG=dev" >> $GITHUB_ENV
       if: github.ref_name == 'main' || startsWith(github.ref_name, 'feature/')
     - run: echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
@@ -51,6 +59,8 @@ jobs:
 
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
+          --cache-from=type=local,src=/tmp/.buildx-cache \
+          --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
           $TAGS \
           --file ./Dockerfile.dless \
           --output type=image,push=true \
@@ -72,6 +82,8 @@ jobs:
 
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
+          --cache-from=type=local,src=/tmp/.buildx-cache \
+          --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
           $TAGS \
           --file ./Dockerfile \
           --output type=image,push=true \
@@ -111,12 +123,12 @@ jobs:
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}"
+          "ghcr.io/${{ github.repository }}:${{ env.IMAGE_DIGEST }}"
 
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
+          "ghcr.io/${{ github.repository }}:${{ env.DLESS_IMAGE_DIGEST }}"
     
     - name: Verify docker hub image signatures
       if: ${{ env.USE_DOCKER_HUB == 'true' }}
