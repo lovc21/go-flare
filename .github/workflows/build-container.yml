@@ -64,12 +64,12 @@ jobs:
           $TAGS \
           --file ./Dockerfile.dless \
           --output type=image,push=true \
-          --iidfile standard_image.digest \
+          --iidfile dless.digest \
           .
 
     - name: Export IMAGE_DIGEST
       run: |
-        export IMAGE_DIGEST=$(cat standard_image.digest)
+        export IMAGE_DIGEST=$(cat std.digest)
         echo "IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
 
     - name: Build standard image
@@ -87,12 +87,12 @@ jobs:
           $TAGS \
           --file ./Dockerfile \
           --output type=image,push=true \
-          --iidfile standard_image.digest \
+          --iidfile std.digest \
           .
         
     - name: Export DLESS_IMAGE_DIGEST
       run: |
-        export DLESS_IMAGE_DIGEST=$(cat standard_image.digest)
+        export DLESS_IMAGE_DIGEST=$(cat dless.digest)
         echo "DLESS_IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
 
     - name: Install Cosign
