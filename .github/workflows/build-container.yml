@@ -14,7 +14,7 @@ jobs:
       packages: write
       id-token: write
     env:
-      USE_DOCKER_HUB: true
+      USE_DOCKER_HUB: false
     steps:
     - uses: actions/checkout@v4
       with:
@@ -33,7 +33,7 @@ jobs:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    #
+  
     # - name: Login to docker.io
     #   if: ${{ env.USE_DOCKER_HUB == 'true' }}
     #   uses: docker/login-action@v3
