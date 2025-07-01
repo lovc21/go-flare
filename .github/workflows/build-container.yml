@@ -54,7 +54,13 @@ jobs:
           $TAGS \
           --file ./Dockerfile.dless \
           --output type=image,push=true \
+          --iidfile standard_image.digest \
           .
+
+    - name: Export IMAGE_DIGEST
+      run: |
+        export IMAGE_DIGEST=$(cat standard_image.digest)
+        echo "IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
 
     - name: Build standard image
       run: |
@@ -69,9 +75,13 @@ jobs:
           $TAGS \
           --file ./Dockerfile \
           --output type=image,push=true \
+          --iidfile standard_image.digest \
           .
-
-
+        
+    - name: Export DLESS_IMAGE_DIGEST
+      run: |
+        export DLESS_IMAGE_DIGEST=$(cat standard_image.digest)
+        echo "DLESS_IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
@@ -81,8 +91,8 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes "ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}"
-        cosign sign --yes "ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
+          cosign sign --yes ghcr.io/${{ github.repository }}@${{ env.IMAGE_DIGEST }}
+          cosign sign --yes ghcr.io/${{ github.repository }}@${{ env.DLESS_IMAGE_DIGEST }}
     
     - name: Sign docker hub images
       if: ${{ env.USE_DOCKER_HUB == 'true' }}
@@ -90,8 +100,8 @@ jobs:
       env:
         COSIGN_EXPERIMENTAL: 1
       run: |
-        cosign sign --yes "${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}"
-        cosign sign --yes "${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
+          cosign sign --yes ${{ secrets.DOCKER_HUB_REPO }}@${{ env.IMAGE_DIGEST }}
+          cosign sign --yes ${{ secrets.DOCKER_HUB_REPO }}@${{ env.DLESS_IMAGE_DIGEST }}
 
     - name: Verify ghcr image signatures
       shell: bash
