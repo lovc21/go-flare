@@ -22,12 +22,6 @@ jobs:
     - uses: docker/setup-qemu-action@v3
     - uses: docker/setup-buildx-action@v3
 
-    - uses: actions/cache@v3
-      id: buildx-cache
-      with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*') }}
-
     - run: echo "IMAGE_TAG=dev" >> $GITHUB_ENV
       if: github.ref_name == 'main' || startsWith(github.ref_name, 'feature/')
     - run: echo "IMAGE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
@@ -47,29 +41,6 @@ jobs:
     #     username: ${{ secrets.DOCKER_HUB_UID }}
     #     password: ${{ secrets.DOCKER_HUB_PAT }}
 
-    - name: Build distroless image
-      run: |
-        TAGS="--tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
-    
-        if [ "${USE_DOCKER_HUB}" = "true" ]; then
-          TAGS="$TAGS --tag ${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
-        fi
-
-        docker buildx build \
-          --progress=plain \
-          --platform linux/amd64,linux/arm64 \
-          --cache-from=type=local,src=/tmp/.buildx-cache \
-          --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
-          $TAGS \
-          --file ./Dockerfile.dless \
-          --output type=image,push=true \
-          --iidfile dless.digest \
-          .
-
-    - name: Export DLESS_IMAGE_DIGEST
-      run: |
-        DIG=$(cat dless.digest)
-        echo "DLESS_IMAGE_DIGEST=$DIG" >> $GITHUB_ENV
 
     - name: Build standard image
       run: |
@@ -81,18 +52,45 @@ jobs:
 
         docker buildx build \
           --platform linux/amd64,linux/arm64 \
-          --cache-from=type=local,src=/tmp/.buildx-cache \
-          --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
+          --cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-standard \
+          --cache-to=type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-standard,mode=max \
           $TAGS \
           --file ./Dockerfile \
           --output type=image,push=true \
-          --iidfile std.digest\
+          --iidfile std.digest \
           .
+
      
     - name: Export IMAGE_DIGEST
       run: |
         DIG=$(cat std.digest)
         echo "IMAGE_DIGEST=$DIG" >> $GITHUB_ENV
+
+
+    - name: Build distroless image
+      run: |
+        TAGS="--tag ghcr.io/${{ github.repository }}:${{ env.IMAGE_TAG }}-dless"
+    
+        if [ "${USE_DOCKER_HUB}" = "true" ]; then
+          TAGS="$TAGS --tag ${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
+        fi
+
+        docker buildx build \
+          --progress=plain \
+          --platform linux/amd64,linux/arm64 \
+          --cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-dless \
+          --cache-from=type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-standard \
+          --cache-to=type=registry,ref=ghcr.io/${{ github.repository }}:buildcache-dless,mode=max \
+          $TAGS \
+          --file ./Dockerfile.dless \
+          --output type=image,push=true \
+          --iidfile dless.digest \
+          .
+
+    - name: Export DLESS_IMAGE_DIGEST
+      run: |
+        DIG=$(cat dless.digest)
+        echo "DLESS_IMAGE_DIGEST=$DIG" >> $GITHUB_ENV
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
