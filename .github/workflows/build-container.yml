@@ -26,8 +26,6 @@ jobs:
       id: buildx-cache
       with:
         path: /tmp/.buildx-cache
-        # include Dockerfile(s) in the key so cache
-        # invalidates when you change them
         key: ${{ runner.os }}-buildx-${{ hashFiles('**/Dockerfile*') }}
 
     - run: echo "IMAGE_TAG=dev" >> $GITHUB_ENV
@@ -58,6 +56,7 @@ jobs:
         fi
 
         docker buildx build \
+          --progress=plain \
           --platform linux/amd64,linux/arm64 \
           --cache-from=type=local,src=/tmp/.buildx-cache \
           --cache-to=type=local,dest=/tmp/.buildx-cache,mode=max \
