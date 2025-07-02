@@ -67,10 +67,10 @@ jobs:
           --iidfile dless.digest \
           .
 
-    - name: Export IMAGE_DIGEST
+    - name: Export DLESS_IMAGE_DIGEST
       run: |
-        export IMAGE_DIGEST=$(cat std.digest)
-        echo "IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
+        DIG=$(cat dless.digest)
+        echo "DLESS_IMAGE_DIGEST=$DIG" >> $GITHUB_ENV
 
     - name: Build standard image
       run: |
@@ -87,13 +87,13 @@ jobs:
           $TAGS \
           --file ./Dockerfile \
           --output type=image,push=true \
-          --iidfile std.digest \
+          --iidfile std.digest\
           .
-        
-    - name: Export DLESS_IMAGE_DIGEST
+     
+    - name: Export IMAGE_DIGEST
       run: |
-        export DLESS_IMAGE_DIGEST=$(cat dless.digest)
-        echo "DLESS_IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
+        DIG=$(cat std.digest)
+        echo "IMAGE_DIGEST=$DIG" >> $GITHUB_ENV
 
     - name: Install Cosign
       uses: sigstore/cosign-installer@v3.8.1
@@ -123,12 +123,12 @@ jobs:
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "ghcr.io/${{ github.repository }}:${{ env.IMAGE_DIGEST }}"
+          "ghcr.io/${{ github.repository }}@${{ env.IMAGE_DIGEST }}"
 
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "ghcr.io/${{ github.repository }}:${{ env.DLESS_IMAGE_DIGEST }}"
+          "ghcr.io/${{ github.repository }}@${{ env.DLESS_IMAGE_DIGEST }}"
     
     - name: Verify docker hub image signatures
       if: ${{ env.USE_DOCKER_HUB == 'true' }}
@@ -139,9 +139,9 @@ jobs:
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}"
+          "${{ secrets.DOCKER_HUB_REPO }}@${{ env.IMAGE_DIGEST }}"
 
         cosign verify \
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/build-container.yml@${{ github.ref }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-          "${{ secrets.DOCKER_HUB_REPO }}:${{ env.IMAGE_TAG }}-dless"
+          "${{ secrets.DOCKER_HUB_REPO }}@${{ env.DLESS_IMAGE_DIGEST }}"
